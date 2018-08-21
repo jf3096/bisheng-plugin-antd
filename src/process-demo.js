@@ -1,3 +1,5 @@
+import {compileLessSync} from "./less-compiler";
+
 const fs = require('fs');
 const path = require('path');
 const JsonML = require('jsonml.js/lib/utils');
@@ -5,7 +7,7 @@ const Prism = require('node-prismjs');
 const nunjucks = require('nunjucks');
 const postcss = require('postcss');
 const pxtoremPlugin = require('postcss-pxtorem');
-nunjucks.configure({ autoescape: false });
+nunjucks.configure({autoescape: false});
 
 const transformer = require('bisheng-plugin-react/lib/transformer');
 
@@ -24,22 +26,22 @@ function getCode(node) {
 
 function getChineseIntroStart(contentChildren) {
   return contentChildren.findIndex(node =>
-     JsonML.getTagName(node) === 'h2' &&
-      JsonML.getChildren(node)[0] === 'zh-CN'
+    JsonML.getTagName(node) === 'h2' &&
+    JsonML.getChildren(node)[0] === 'zh-CN'
   );
 }
 
 function getEnglishIntroStart(contentChildren) {
   return contentChildren.findIndex(node =>
-     JsonML.getTagName(node) === 'h2' &&
-      JsonML.getChildren(node)[0] === 'en-US'
+    JsonML.getTagName(node) === 'h2' &&
+    JsonML.getChildren(node)[0] === 'en-US'
   );
 }
 
 function getCodeIndex(contentChildren) {
   return contentChildren.findIndex(node =>
-     JsonML.getTagName(node) === 'pre' &&
-      JsonML.getAttributes(node).lang === 'jsx'
+    JsonML.getTagName(node) === 'pre' &&
+    JsonML.getAttributes(node).lang === 'jsx'
   );
 }
 
@@ -61,18 +63,30 @@ function getSourceCodeObject(contentChildren, codeIndex) {
 }
 
 function getStyleNode(contentChildren) {
-  return contentChildren.filter(node =>
-     isStyleTag(node) ||
-      (JsonML.getTagName(node) === 'pre' && JsonML.getAttributes(node).lang === 'css')
+  return contentChildren.filter(node => {
+      if (isStyleTag(node)) {
+        return true;
+      }
+      if ((JsonML.getTagName(node) === 'pre')) {
+        const nodeType = String(JsonML.getAttributes(node).lang).toLowerCase();
+        if (nodeType === 'less') {
+          return true;
+        }
+        else if (nodeType === 'css') {
+          return true;
+        }
+      }
+      return false;
+    }
   )[0];
 }
 
-module.exports = ({ markdownData, isBuild, noPreview, babelConfig, pxtorem }) => {
+module.exports = ({markdownData, isBuild, noPreview, babelConfig, pxtorem, less}) => {
   const meta = markdownData.meta;
   meta.id = meta.filename.replace(/\.md$/, '').replace(/\//g, '-');
   // Should throw debugging demo while publish.
   if (isBuild && meta.debug) {
-    return { meta: {} };
+    return {meta: {}};
   }
 
   // Update content of demo.
@@ -114,11 +128,19 @@ module.exports = ({ markdownData, isBuild, noPreview, babelConfig, pxtorem }) =>
 
   // Add style node to markdown data.
   const styleNode = getStyleNode(contentChildren);
+  console.log(11111111111111)
+  console.log(styleNode)
   if (isStyleTag(styleNode)) {
+    console.log('isStyleTag(styleNode)')
     markdownData.style = JsonML.getChildren(styleNode)[0];
   } else if (styleNode) {
     const styleTag = contentChildren.filter(isStyleTag)[0];
     let originalStyle = getCode(styleNode) + (styleTag ? JsonML.getChildren(styleTag)[0] : '');
+    console.log(less);
+    if (less) {
+      console.log(originalStyle);
+      originalStyle = compileLessSync(originalStyle);
+    }
     if (pxtorem) {
       originalStyle = postcss(pxtoremPlugin({
         rootValue: 50,
@@ -138,7 +160,8 @@ module.exports = ({ markdownData, isBuild, noPreview, babelConfig, pxtorem }) =>
         (meta.reactRouter === 'react-router-dom' ? 'react-router-dom@4/umd/react-router-dom' : false),
     });
     const fileName = `demo-${Math.random()}.html`;
-    fs.writeFile(path.join(process.cwd(), '_site', fileName), html, () => {});
+    fs.writeFile(path.join(process.cwd(), '_site', fileName), html, () => {
+    });
     markdownData.src = path.join('/', fileName);
   }
 
