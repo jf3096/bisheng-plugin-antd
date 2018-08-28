@@ -1,5 +1,3 @@
-import {compileLessSync} from "./less-compiler";
-
 const fs = require('fs');
 const path = require('path');
 const JsonML = require('jsonml.js/lib/utils');
@@ -7,6 +5,8 @@ const Prism = require('node-prismjs');
 const nunjucks = require('nunjucks');
 const postcss = require('postcss');
 const pxtoremPlugin = require('postcss-pxtorem');
+const parseLess = require('./less-sync-parser');
+
 nunjucks.configure({autoescape: false});
 
 const transformer = require('bisheng-plugin-react/lib/transformer');
@@ -63,7 +63,7 @@ function getSourceCodeObject(contentChildren, codeIndex) {
 }
 
 function getStyleNode(contentChildren) {
-  return contentChildren.filter(node => {
+  return contentChildren.filter((node) => {
       if (isStyleTag(node)) {
         return true;
       }
@@ -71,8 +71,7 @@ function getStyleNode(contentChildren) {
         const nodeType = String(JsonML.getAttributes(node).lang).toLowerCase();
         if (nodeType === 'less') {
           return true;
-        }
-        else if (nodeType === 'css') {
+        } else if (nodeType === 'css') {
           return true;
         }
       }
@@ -128,18 +127,13 @@ module.exports = ({markdownData, isBuild, noPreview, babelConfig, pxtorem, less}
 
   // Add style node to markdown data.
   const styleNode = getStyleNode(contentChildren);
-  console.log(11111111111111)
-  console.log(styleNode)
   if (isStyleTag(styleNode)) {
-    console.log('isStyleTag(styleNode)')
     markdownData.style = JsonML.getChildren(styleNode)[0];
   } else if (styleNode) {
     const styleTag = contentChildren.filter(isStyleTag)[0];
     let originalStyle = getCode(styleNode) + (styleTag ? JsonML.getChildren(styleTag)[0] : '');
-    console.log(less);
-    if (less) {
-      console.log(originalStyle);
-      originalStyle = compileLessSync(originalStyle);
+    if (JsonML.getAttributes(styleNode).lang === 'less') {
+      originalStyle = parseLess(originalStyle);
     }
     if (pxtorem) {
       originalStyle = postcss(pxtoremPlugin({

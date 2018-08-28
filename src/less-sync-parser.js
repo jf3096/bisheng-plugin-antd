@@ -3,7 +3,7 @@ const deasync = require('deasync');
 
 function parse(str, opts) {
   let done = false;
-  let data;
+  let data = null;
   less.render(str, opts).then((res) => {
     data = res.css;
     done = true;
