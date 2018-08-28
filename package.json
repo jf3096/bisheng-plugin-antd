@@ -1,13 +1,17 @@
 {
-  "name": "bisheng-plugin-antd",
-  "version": "0.16.5",
+  "name": "xfe-bisheng-plugin-antd",
+  "version": "0.0.1",
   "description": "To support ant.design-like websites.",
   "scripts": {
     "lint": "eslint ./src",
     "eslint-fix": "eslint --fix ./src",
     "babel": "babel ./src --out-dir ./lib",
-    "prepublish": "npm run babel",
-    "postpublish": "rm -rf lib",
+    "copy-resource": "cpx \"src/*.html\" lib",
+    "rm-lib": "rimraf lib",
+    "compile": "npm run rm-lib && npm run babel && npm run copy-resource",
+    "prepublish": "npm run compile",
+    "precommit": "npm run compile",
+    "postpublish": "npm run rm-lib",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "babel": {
@@ -60,11 +64,13 @@
   "devDependencies": {
     "babel-cli": "^6.10.1",
     "babel-preset-stage-0": "^6.5.0",
+    "cpx": "^1.5.0",
     "eslint": "^3.9.1",
     "eslint-config-airbnb": "^12.0.0",
     "eslint-plugin-import": "^1.8.1",
     "eslint-plugin-jsx-a11y": "^2.2.3",
-    "eslint-plugin-react": "^6.4.1"
+    "eslint-plugin-react": "^6.4.1",
+    "rimraf": "^2.6.2"
   },
   "peerDependencies": {
     "bisheng": ">=0.22.0",
@@ -72,5 +78,9 @@
     "jsonml-to-react-element": "^1.0.0",
     "react": "^15.0.0 || ^16.0.0",
     "typescript": "^2.0.6"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }
